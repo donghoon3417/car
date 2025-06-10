@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Car Control Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #f0f0f0;
+    }
+    .car {
+      width: 80px;
+      height: 40px;
+      position: absolute;
+      transform-origin: center center;
+      transition: transform 0.1s linear;
+      cursor: pointer;
+    }
+    .selected {
+      border: 2px solid red;
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  const carCount = 3;
+  const aiCarCount = 3;
+  const carsPerRow = 5;
+  const totalCarCount = carCount + aiCarCount;
+
+  const startX = 100;
+  const startY = 100;
+  const spacingX = 120;
+  const spacingY = 120;
+
+  const cars = [];
+  let currentPlayerIndex = 0;
+
+  const speed = 2;
+  const aiSpeed = speed * 10;
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  const carW = 80, carH = 40;
+  const margin = 20;
+
+  // AI 자동차 초기화 (오른쪽에서 왼쪽)
+  function resetAICar(car) {
+    const offset = 100;
+    car.x = screenWidth + offset;
+    car.y = Math.random() * (screenHeight - carH - margin * 2) + margin;
+    car.vx = -aiSpeed;
+    car.vy = 0;
+    car.el.style.left = `${car.x}px`;
+    car.el.style.top = `${car.y}px`;
+  }
+
+  // 자동차 생성
+  for (let i = 0; i < totalCarCount; i++) {
+    const car = document.createElement("img");
+    car.src = i < carCount ? `car${i + 1}.png` : `car_ai.png`;
+    car.className = "car";
+
+    const row = Math.floor(i / carsPerRow);
+    const col = i % carsPerRow;
+    const x = startX + col * spacingX;
+    const y = startY + row * spacingY;
+
+    car.style.left = `${x}px`;
+    car.style.top = `${y}px`;
+    document.body.appendChild(car);
+
+    const carData = {
+      el: car,
+      x: x, y: y,
+      angle: 0,
+      vx: 0, vy: 0,
+      isAI: i >= carCount
+    };
+
+    if (carData.isAI) {
+      resetAICar(carData);
+    }
+
+    if (!carData.isAI) {
+      car.addEventListener("click", () => {
+        cars[currentPlayerIndex].el.classList.remove("selected");
+        currentPlayerIndex = i;
+        car.classList.add("selected");
+      });
+    }
+
+    cars.push(carData);
+  }
+
+  cars[currentPlayerIndex].el.classList.add("selected");
+
+  const keysPressed = {};
+
+  document.addEventListener("keydown", (e) => {
+    const k = e.key.toLowerCase();
+    keysPressed[k] = true;
+
+    const car = cars[currentPlayerIndex];
+    if (k === 'q') {
+      car.angle -= 90;
+    }
+    if (k === 'e') {
+      car.angle += 180;
+    }
+  });
+
+  document.addEventListener("keyup", (e) => {
+    delete keysPressed[e.key.toLowerCase()];
+  });
+
+  // AI 자동차 이동
+  setInterval(() => {
+    cars.forEach(car => {
+      if (car.isAI) {
+        car.x += car.vx;
+        car.y += car.vy;
+
+        if (car.x < -100) {
+          resetAICar(car);
+        }
+
+        car.el.style.left = `${car.x}px`;
+        car.el.style.top = `${car.y}px`;
+      }
+    });
+  }, 100);
+
+  // 플레이어 자동차 이동
+  function update() {
+    const car = cars[currentPlayerIndex];
+
+    let vx = 0, vy = 0;
+    if (keysPressed['w']) vy -= 1;
+    if (keysPressed['s']) vy += 1;
+    if (keysPressed['a']) vx -= 1;
+    if (keysPressed['d']) vx += 1;
+
+    if (vx !== 0 && vy !== 0) {
+      vx *= Math.SQRT1_2;
+      vy *= Math.SQRT1_2;
+    }
+
+    car.vx = vx * speed;
+    car.vy = vy * speed;
+
+    car.x += car.vx;
+    car.y += car.vy;
+
+    if (car.x < margin) car.x = margin;
+    if (car.x > screenWidth - carW - margin) car.x = screenWidth - carW - margin;
+    if (car.y < margin) car.y = margin;
+    if (car.y > screenHeight - carH - margin) car.y = screenHeight - carH - margin;
+
+    car.el.style.left = `${car.x}px`;
+    car.el.style.top = `${car.y}px`;
+    car.el.style.transform = `rotate(${car.angle}deg)`;
+
+    requestAnimationFrame(update);
+  }
+
+  update();
+</script>
+
+</body>
+</html>
